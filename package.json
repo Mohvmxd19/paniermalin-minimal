@@ -1,0 +1,10 @@
+{
+  "name": "paniermalin",
+  "version": "1.0.0",
+  "description": "PanierMalin — Application web anti-gaspillage alimentaire à Abidjan",
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "lint": "node scripts/lint.js",
+    "test": "node tests/app.test.js"
+  }
+}
