@@ -1,0 +1,10 @@
+# Environnement & dépendances éventuelles
+.env
+.env.local
+node_modules/
+
+# Journaux & fichiers système
+*.log
+.DS_Store
+Thumbs.db
+coverage/
