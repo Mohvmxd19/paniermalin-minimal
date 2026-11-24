@@ -147,9 +147,9 @@ test('Persistance locale : ajout, modification et désactivation d\'un panier co
   assert.strictEqual(afterEdit.actif, 0);
 });
 
-test('Structure HTML : les 9 vues principales (dont page-admin) et le bloc pro masquable sont présents', () => {
+test('Structure HTML : les 9 vues principales (dont page-admin) et le guichet de paiement sont présents', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  for (const id of ['page-home', 'page-auth', 'page-catalog', 'page-detail', 'page-confirm', 'page-client', 'page-merchant', 'page-publish', 'page-admin', 'hero-pro-note', 'pub-image-file', 'pub-image-url', 'detail-img']) {
+  for (const id of ['page-home', 'page-auth', 'page-catalog', 'page-detail', 'page-confirm', 'page-client', 'page-merchant', 'page-publish', 'page-admin', 'payment-modal', 'hero-pro-note', 'pub-image-file', 'pub-image-url', 'detail-img']) {
     assert(html.includes(`id="${id}"`), `Section manquante dans index.html : ${id}`);
   }
 });

@@ -820,6 +820,15 @@ function updateSummary() {
   document.getElementById('btn-order').textContent = `Confirmer la réservation (${fmt(total)} FCFA)`;
 }
 
+// Configuration agrégateur de paiement Mobile Money (CinetPay / Wave / Orange Money)
+const PAYMENT_CONFIG = {
+  apikey: '',   // Renseignez votre clé API CinetPay pour activer le guichet réel
+  site_id: '',  // Renseignez votre SITE_ID CinetPay
+  mode: 'TEST'
+};
+
+let pendingPayment = null;
+
 function submitOrder() {
   if (!state.user) {
     toast('Connectez-vous ou créez un compte pour réserver.', true);
@@ -844,7 +853,124 @@ function submitOrder() {
     return;
   }
 
-  p.stock -= state.qty;
+  const delFee = state.reception === 'livraison' ? (p.frais_livraison || 1000) : 0;
+  const totalAmount = (p.prix_remise * state.qty) + delFee;
+  const txId = 'TXN-' + Date.now().toString().slice(-6);
+
+  pendingPayment = {
+    panierId: p.id,
+    qty: state.qty,
+    reception: state.reception,
+    address,
+    payment: state.payment,
+    totalAmount,
+    txId,
+    titre: p.titre
+  };
+
+  // Si les clés CinetPay + SDK sont présents, utiliser le guichet CinetPay officiel
+  if (PAYMENT_CONFIG.apikey && PAYMENT_CONFIG.site_id && typeof window.CinetPay !== 'undefined') {
+    window.CinetPay.setConfig({
+      apikey: PAYMENT_CONFIG.apikey,
+      site_id: PAYMENT_CONFIG.site_id,
+      mode: PAYMENT_CONFIG.mode
+    });
+    window.CinetPay.getCheckout({
+      transaction_id: txId,
+      amount: totalAmount,
+      currency: 'XOF',
+      channels: 'MOBILE_MONEY',
+      description: `PanierMalin - ${p.titre} (x${state.qty})`,
+      customer_name: state.user.nom,
+      customer_phone_number: state.user.telephone,
+      customer_country: 'CI'
+    });
+    window.CinetPay.waitResponse(data => {
+      if (data.status === 'ACCEPTED') finalizePendingOrder(data.operator_id || txId);
+      else toast('Paiement annulé ou refusé.', true);
+    });
+    return;
+  }
+
+  // Sinon, ouvrir le guichet Mobile Money interactif intégré (Wave / Orange Money)
+  openPaymentModal(pendingPayment);
+}
+
+function openPaymentModal(ctx) {
+  const modal = document.getElementById('payment-modal');
+  const head = document.getElementById('pay-modal-head');
+  const isOM = ctx.payment === 'Orange Money';
+  head.classList.toggle('om', isOM);
+  document.getElementById('pay-modal-provider').textContent = isOM ? 'Orange Money CI' : 'Wave Mobile Money';
+  document.getElementById('pay-modal-item').textContent = `${ctx.titre} (x${ctx.qty})`;
+  document.getElementById('pay-modal-tx').textContent = ctx.txId;
+  document.getElementById('pay-modal-amount').textContent = `${fmt(ctx.totalAmount)} FCFA`;
+  document.getElementById('pay-phone').value = state.user ? state.user.telephone : '';
+  document.getElementById('pay-pin').value = '';
+  document.getElementById('pay-step-1').style.display = 'block';
+  document.getElementById('pay-step-2').style.display = 'none';
+  modal.style.display = 'flex';
+}
+
+function closePaymentModal() {
+  document.getElementById('payment-modal').style.display = 'none';
+  pendingPayment = null;
+}
+
+function sendPaymentRequest() {
+  const phone = document.getElementById('pay-phone').value.trim();
+  if (!phone || phone.replace(/\D/g, '').length < 8) {
+    toast('Saisissez un numéro Mobile Money valide.', true);
+    return;
+  }
+  const btn = document.getElementById('btn-pay-send');
+  btn.textContent = 'Envoi en cours...';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = 'Envoyer la demande';
+    btn.disabled = false;
+    document.getElementById('pay-ussd-title').textContent = `Notification envoyée au ${phone}`;
+    document.getElementById('pay-step-1').style.display = 'none';
+    document.getElementById('pay-step-2').style.display = 'block';
+  }, 550);
+}
+
+function backToPayStep1() {
+  document.getElementById('pay-step-2').style.display = 'none';
+  document.getElementById('pay-step-1').style.display = 'block';
+}
+
+function confirmPaymentModal() {
+  const pin = document.getElementById('pay-pin').value.trim();
+  if (!/^\d{4,6}$/.test(pin)) {
+    toast('Saisissez un code de confirmation de 4 à 6 chiffres (ex. 1234).', true);
+    return;
+  }
+  const btn = document.getElementById('btn-pay-confirm');
+  btn.textContent = 'Validation...';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = 'Valider le paiement';
+    btn.disabled = false;
+    const txId = pendingPayment ? pendingPayment.txId : 'TXN';
+    document.getElementById('payment-modal').style.display = 'none';
+    finalizePendingOrder(txId);
+  }, 600);
+}
+
+function finalizePendingOrder(transactionRef) {
+  if (!pendingPayment) return;
+  const ctx = pendingPayment;
+  pendingPayment = null;
+
+  const paniers = getPaniers();
+  const p = paniers.find(x => x.id === ctx.panierId);
+  if (!p || !p.actif || p.stock < ctx.qty) {
+    toast('Stock insuffisant pour ce panier.', true);
+    return;
+  }
+
+  p.stock -= ctx.qty;
   savePaniers(paniers);
 
   const orders = getOrders();
@@ -854,33 +980,35 @@ function submitOrder() {
     client_id: state.user.id,
     commercant_id: p.commercant_id,
     panier_id: p.id,
-    quantite: state.qty,
+    quantite: ctx.qty,
     titre: p.titre,
     commercant_nom: p.commercant_nom,
     quartier: p.quartier,
     prix_initial: p.prix_initial,
     prix_remise: p.prix_remise,
-    frais_livraison: state.reception === 'livraison' ? (p.frais_livraison || 1000) : 0,
-    mode_reception: state.reception,
-    adresse_livraison: address,
-    moyen_paiement: state.payment,
+    frais_livraison: ctx.reception === 'livraison' ? (p.frais_livraison || 1000) : 0,
+    mode_reception: ctx.reception,
+    adresse_livraison: ctx.address,
+    moyen_paiement: ctx.payment,
+    transaction_ref: transactionRef,
     creneau_debut: p.creneau_debut,
     creneau_fin: p.creneau_fin,
     code_retrait: code,
-    statut: state.reception === 'livraison' ? 'en_livraison' : 'en_cours',
+    statut: ctx.reception === 'livraison' ? 'en_livraison' : 'en_cours',
     client_nom: state.user.nom,
     client_telephone: state.user.telephone
   });
   saveOrders(orders);
 
   document.getElementById('confirm-code').textContent = code;
-  document.getElementById('confirm-sub').textContent = state.reception === 'livraison'
-    ? 'Donnez ce code au livreur lors de la réception.'
-    : 'Présentez ce code en boutique pour retirer votre panier.';
-  document.getElementById('confirm-meta').textContent = state.reception === 'livraison'
-    ? `${p.commercant_nom} (x${state.qty}) · Livraison : ${address}`
-    : `${p.commercant_nom} (x${state.qty}) · Retrait : ${p.creneau_debut} - ${p.creneau_fin}`;
+  document.getElementById('confirm-sub').textContent = ctx.reception === 'livraison'
+    ? `Paiement ${ctx.payment} validé (${transactionRef}). Donnez ce code au livreur lors de la réception.`
+    : `Paiement ${ctx.payment} validé (${transactionRef}). Présentez ce code en boutique pour retirer votre panier.`;
+  document.getElementById('confirm-meta').textContent = ctx.reception === 'livraison'
+    ? `${p.commercant_nom} (x${ctx.qty}) · Livraison : ${ctx.address}`
+    : `${p.commercant_nom} (x${ctx.qty}) · Retrait : ${p.creneau_debut} - ${p.creneau_fin}`;
 
+  toast(`Paiement ${ctx.payment} confirmé !`);
   showPage('confirm');
 }
 
