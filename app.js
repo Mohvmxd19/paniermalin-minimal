@@ -820,16 +820,10 @@ function updateSummary() {
   document.getElementById('btn-order').textContent = `Confirmer la réservation (${fmt(total)} FCFA)`;
 }
 
-// Configuration agrégateur de paiement Mobile Money (CinetPay / Wave / Orange Money)
-const PAYMENT_CONFIG = {
-  apikey: '',   // Renseignez votre clé API CinetPay pour activer le guichet réel
-  site_id: '',  // Renseignez votre SITE_ID CinetPay
-  mode: 'TEST'
-};
-
+// Intégration agrégateur de paiement Mobile Money GeniusPay (https://pay.genius.ci)
 let pendingPayment = null;
 
-function submitOrder() {
+async function submitOrder() {
   if (!state.user) {
     toast('Connectez-vous ou créez un compte pour réserver.', true);
     openAuth('login');
@@ -855,7 +849,7 @@ function submitOrder() {
 
   const delFee = state.reception === 'livraison' ? (p.frais_livraison || 1000) : 0;
   const totalAmount = (p.prix_remise * state.qty) + delFee;
-  const txId = 'TXN-' + Date.now().toString().slice(-6);
+  const txId = 'GP-' + Date.now().toString().slice(-6);
 
   pendingPayment = {
     panierId: p.id,
@@ -868,31 +862,47 @@ function submitOrder() {
     titre: p.titre
   };
 
-  // Si les clés CinetPay + SDK sont présents, utiliser le guichet CinetPay officiel
-  if (PAYMENT_CONFIG.apikey && PAYMENT_CONFIG.site_id && typeof window.CinetPay !== 'undefined') {
-    window.CinetPay.setConfig({
-      apikey: PAYMENT_CONFIG.apikey,
-      site_id: PAYMENT_CONFIG.site_id,
-      mode: PAYMENT_CONFIG.mode
-    });
-    window.CinetPay.getCheckout({
-      transaction_id: txId,
-      amount: totalAmount,
-      currency: 'XOF',
-      channels: 'MOBILE_MONEY',
-      description: `PanierMalin - ${p.titre} (x${state.qty})`,
-      customer_name: state.user.nom,
-      customer_phone_number: state.user.telephone,
-      customer_country: 'CI'
-    });
-    window.CinetPay.waitResponse(data => {
-      if (data.status === 'ACCEPTED') finalizePendingOrder(data.operator_id || txId);
-      else toast('Paiement annulé ou refusé.', true);
-    });
-    return;
+  // Appel sécurisé vers la fonction serveur Vercel -> API GeniusPay (https://pay.genius.ci/api/v1/merchant/payments)
+  const orderBtn = document.getElementById('btn-order');
+  const prevText = orderBtn ? orderBtn.textContent : '';
+  if (orderBtn) {
+    orderBtn.textContent = 'Connexion à GeniusPay...';
+    orderBtn.disabled = true;
   }
 
-  // Sinon, ouvrir le guichet Mobile Money interactif intégré (Wave / Orange Money)
+  try {
+    const resp = await fetch('/api/geniuspay/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: totalAmount,
+        description: `PanierMalin - ${p.titre} (x${state.qty})`,
+        payment_method: state.payment === 'Orange Money' ? 'orange_money' : 'wave',
+        customer: {
+          name: state.user.nom,
+          phone: state.user.telephone
+        }
+      })
+    });
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      const json = await resp.json();
+      if (json.success && json.checkout_url) {
+        writeStore('pm_min_pending_gp', { ...pendingPayment, txId: json.reference || txId });
+        window.location.href = json.checkout_url;
+        return;
+      }
+    }
+  } catch (_) {
+    // Mode local / clés GeniusPay non encore configurées -> guichet intégré
+  } finally {
+    if (orderBtn) {
+      orderBtn.textContent = prevText;
+      orderBtn.disabled = false;
+    }
+  }
+
+  // Guichet GeniusPay interactif intégré (Wave / Orange Money)
   openPaymentModal(pendingPayment);
 }
 
@@ -901,7 +911,7 @@ function openPaymentModal(ctx) {
   const head = document.getElementById('pay-modal-head');
   const isOM = ctx.payment === 'Orange Money';
   head.classList.toggle('om', isOM);
-  document.getElementById('pay-modal-provider').textContent = isOM ? 'Orange Money CI' : 'Wave Mobile Money';
+  document.getElementById('pay-modal-provider').textContent = isOM ? 'GeniusPay · Orange Money CI' : 'GeniusPay · Wave CI';
   document.getElementById('pay-modal-item').textContent = `${ctx.titre} (x${ctx.qty})`;
   document.getElementById('pay-modal-tx').textContent = ctx.txId;
   document.getElementById('pay-modal-amount').textContent = `${fmt(ctx.totalAmount)} FCFA`;
