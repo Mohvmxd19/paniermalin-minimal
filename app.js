@@ -100,6 +100,7 @@ const PHONE_RULES = {
 
 // Données initiales (format CI 10 chiffres)
 const SEED_USERS = [
+  { id: 900, nom: 'Admin PanierMalin', telephone: '+2250700000000', mot_de_passe: 'admin1234', role: 'admin', quartier: 'Plateau', adresse: 'Siège PanierMalin, Plateau', lat: 5.3261, lng: -4.0197 },
   { id: 1, nom: 'Le Fournil Cocody', telephone: '+2250700000001', mot_de_passe: 'demo1234', role: 'commercant', quartier: 'Cocody', adresse: 'Boulevard Latrille, Cocody Saint-Jean', lat: 5.3585, lng: -3.9820 },
   { id: 2, nom: 'Maquis Chez Tantie', telephone: '+2250700000002', mot_de_passe: 'demo1234', role: 'commercant', quartier: 'Marcory', adresse: 'Zone 4 Rue du Canal, Marcory', lat: 5.3045, lng: -3.9860 },
   { id: 3, nom: 'Awa Koné', telephone: '+2250700000003', mot_de_passe: 'demo1234', role: 'client', quartier: 'Cocody', adresse: 'Riviera 2, non loin de l\'école', lat: 5.3680, lng: -3.9740 }
@@ -163,7 +164,14 @@ function writeStore(key, value) {
   } catch (_) {}
 }
 
-function getUsers()   { return readStore('pm_min_users', SEED_USERS); }
+function getUsers() {
+  const list = readStore('pm_min_users', SEED_USERS);
+  if (!list.some(u => u.role === 'admin' || u.telephone === '+2250700000000')) {
+    list.unshift(JSON.parse(JSON.stringify(SEED_USERS[0])));
+    writeStore('pm_min_users', list);
+  }
+  return list;
+}
 function saveUsers(v) { writeStore('pm_min_users', v); }
 function getPaniers() {
   const list = readStore('pm_min_paniers', SEED_PANIERS);
@@ -242,6 +250,7 @@ function showPage(id, skipHistory = false) {
   if (id === 'client')   renderClientSpace();
   if (id === 'merchant') renderMerchantSpace();
   if (id === 'publish')  preparePublish();
+  if (id === 'admin')    renderAdminSpace();
 }
 
 function goBack(fallback = 'home') {
@@ -282,7 +291,9 @@ function goToSpace() {
     openAuth('login');
     return;
   }
-  showPage(state.user.role === 'commercant' ? 'merchant' : 'client');
+  if (state.user.role === 'admin') showPage('admin');
+  else if (state.user.role === 'commercant') showPage('merchant');
+  else showPage('client');
 }
 
 function openAuth(tab = 'login', role = 'client') {
@@ -311,7 +322,9 @@ function updateHeader() {
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'inline-flex';
     spaceNav.style.display = 'inline-block';
-    spaceNav.textContent = u.role === 'commercant' ? 'Tableau de bord' : 'Mes commandes';
+    spaceNav.textContent = u.role === 'admin'
+      ? 'Administration'
+      : (u.role === 'commercant' ? 'Tableau de bord' : 'Mes commandes');
     if (proNote) proNote.style.display = 'none';
   } else {
     userEl.style.display = 'none';
@@ -329,7 +342,7 @@ function updateHeader() {
   if (state.page === 'home') document.getElementById('nav-home')?.classList.add('active');
   else if (state.page === 'catalog' && state.favOnly) document.getElementById('nav-favorites')?.classList.add('active');
   else if (state.page === 'catalog' || state.page === 'detail') document.getElementById('nav-catalog')?.classList.add('active');
-  else if (['client', 'merchant', 'publish'].includes(state.page)) document.getElementById('nav-space')?.classList.add('active');
+  else if (['client', 'merchant', 'publish', 'admin'].includes(state.page)) document.getElementById('nav-space')?.classList.add('active');
 }
 
 // ── Validation téléphone & mot de passe ──
@@ -444,7 +457,9 @@ function handleLogin(e) {
   writeStore('pm_min_session', state.user);
   loadUserFavorites();
   toast(`Bienvenue, ${state.user.nom}`);
-  showPage(state.user.role === 'commercant' ? 'merchant' : 'catalog');
+  if (state.user.role === 'admin') showPage('admin');
+  else if (state.user.role === 'commercant') showPage('merchant');
+  else showPage('catalog');
 }
 
 function handleRegister(e) {
@@ -1253,6 +1268,172 @@ function handlePublish(e) {
   e.target.reset();
   toast('Panier publié.');
   showPage('merchant');
+}
+
+// ── Espace Administrateur (Supervision globale, commissions 15% & modération) ──
+function renderAdminSpace() {
+  if (!state.user || state.user.role !== 'admin') {
+    openAuth('login');
+    return;
+  }
+
+  const users = getUsers();
+  const paniers = getPaniers();
+  const orders = getOrders();
+  const validOrders = orders.filter(o => o.statut !== 'annule');
+
+  const totalPaniersVendus = validOrders.reduce((s, o) => s + (o.quantite || 1), 0);
+  const totalGmv = validOrders.reduce((s, o) => s + (o.prix_remise * (o.quantite || 1)), 0);
+  const totalCommission = Math.round(totalGmv * 0.15);
+  const totalCo2 = (totalPaniersVendus * 2.5).toFixed(1);
+  const activePaniers = paniers.filter(p => p.actif === 1 && p.stock > 0).length;
+  const merchantsCount = users.filter(u => u.role === 'commercant').length;
+
+  document.getElementById('adm-commission').textContent = `${fmt(totalCommission)} F`;
+  document.getElementById('adm-gmv').textContent = `${fmt(totalGmv)} F`;
+  document.getElementById('adm-paniers').textContent = `${activePaniers} / ${paniers.length}`;
+  document.getElementById('adm-merchants').textContent = String(merchantsCount);
+  document.getElementById('adm-users').textContent = String(users.length);
+  document.getElementById('adm-co2').textContent = `${totalCo2} kg`;
+
+  // 1. Modération des paniers
+  const paniersBox = document.getElementById('admin-paniers');
+  if (!paniers.length) {
+    paniersBox.innerHTML = '<div class="empty">Aucun panier enregistré sur la plateforme.</div>';
+  } else {
+    paniersBox.innerHTML = paniers.map(p => {
+      const imgSrc = getPanierImage(p);
+      const fb = getFallbackSvg(p.categorie);
+      return `
+        <div class="list-row">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <img class="merchant-thumb" src="${esc(imgSrc)}" alt="${esc(p.titre)}" onerror="this.onerror=null;this.src='${fb}';">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <strong>${esc(p.titre)}</strong>
+                <span class="tag">${esc(p.categorie)}</span>
+                <span class="tag ${p.actif ? 'tag-green' : ''}">${p.actif ? 'Actif' : 'Suspendu'}</span>
+              </div>
+              <div style="font-size:13px; color:var(--muted); margin-top:2px;">
+                ${esc(p.commercant_nom)} (${esc(p.quartier)}) &middot; ${fmt(p.prix_remise)} F (-${p.remise}%) &middot; Stock : ${p.stock}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${p.actif
+              ? `<button class="btn btn-ghost btn-sm" onclick="adminTogglePanier(${p.id}, false)">Suspendre</button>`
+              : `<button class="btn btn-green btn-sm" onclick="adminTogglePanier(${p.id}, true)">Activer</button>`}
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="adminDeletePanier(${p.id})">Supprimer</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // 2. Supervision des transactions & commissions (15%)
+  const ordersBox = document.getElementById('admin-orders');
+  if (!orders.length) {
+    ordersBox.innerHTML = '<div class="empty">Aucune transaction enregistrée.</div>';
+  } else {
+    ordersBox.innerHTML = orders.map(o => {
+      const qty = o.quantite || 1;
+      const montant = (o.prix_remise || 0) * qty;
+      const comm = o.statut === 'annule' ? 0 : Math.round(montant * 0.15);
+      return `
+        <div class="list-row">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span class="code-inline">${esc(o.code_retrait)}</span>
+              <strong>${esc(o.titre)} ${qty > 1 ? `(x${qty})` : ''}</strong>
+              <span class="tag ${o.statut === 'annule' ? '' : 'tag-green'}">${statusText(o.statut)}</span>
+            </div>
+            <div style="font-size:13px; color:var(--muted); margin-top:3px;">
+              Client : ${esc(o.client_nom || 'Client')} &rarr; Commerce : ${esc(o.commercant_nom)} (${esc(o.quartier)})
+            </div>
+            <div style="font-size:13px; color:var(--text); margin-top:2px;">
+              Montant : <strong>${fmt(montant)} F</strong> (${esc(o.moyen_paiement)}) &middot;
+              <span style="color:var(--green); font-weight:600;">Commission PanierMalin (15%) : ${fmt(comm)} F</span>
+            </div>
+          </div>
+          <div>
+            ${(o.statut === 'en_cours' || o.statut === 'en_livraison')
+              ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="adminCancelOrder(${o.id})">Annuler</button>`
+              : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // 3. Gestion des comptes utilisateurs
+  const usersBox = document.getElementById('admin-users');
+  usersBox.innerHTML = users.map(u => {
+    const roleLabel = u.role === 'admin' ? 'Administrateur' : (u.role === 'commercant' ? 'Commerçant' : 'Client');
+    const roleClass = u.role === 'admin' ? 'tag-discount' : (u.role === 'commercant' ? 'tag-green' : '');
+    return `
+      <div class="list-row">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <strong>${esc(u.nom)}</strong>
+            <span class="tag ${roleClass}">${roleLabel}</span>
+          </div>
+          <div style="font-size:13px; color:var(--muted); margin-top:2px;">
+            ${esc(u.telephone)} &middot; ${esc(u.quartier || 'Abidjan')} ${u.adresse ? '&middot; ' + esc(u.adresse) : ''}
+          </div>
+        </div>
+        <div>
+          ${u.role !== 'admin'
+            ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="adminDeleteUser(${u.id})">Supprimer</button>`
+            : '<span style="font-size:12px; color:var(--muted);">Compte système</span>'}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function adminTogglePanier(id, enable) {
+  if (!state.user || state.user.role !== 'admin') return;
+  const paniers = getPaniers();
+  const p = paniers.find(x => x.id === id);
+  if (!p) return;
+  p.actif = enable ? 1 : 0;
+  if (enable && (!p.stock || p.stock < 1)) p.stock = 1;
+  savePaniers(paniers);
+  toast(enable ? 'Panier réactivé par l\'administrateur.' : 'Panier suspendu par l\'administrateur.');
+  renderAdminSpace();
+}
+
+function adminDeletePanier(id) {
+  if (!state.user || state.user.role !== 'admin') return;
+  const paniers = getPaniers().filter(x => x.id !== id);
+  savePaniers(paniers);
+  toast('Panier supprimé de la plateforme.');
+  renderAdminSpace();
+}
+
+function adminCancelOrder(id) {
+  if (!state.user || state.user.role !== 'admin') return;
+  const orders = getOrders();
+  const o = orders.find(x => x.id === id);
+  if (!o || o.statut === 'annule') return;
+  o.statut = 'annule';
+  saveOrders(orders);
+
+  const paniers = getPaniers();
+  const p = paniers.find(x => x.id === o.panier_id);
+  if (p) {
+    p.stock += (o.quantite || 1);
+    savePaniers(paniers);
+  }
+  toast('Transaction annulée et stock restauré.');
+  renderAdminSpace();
+}
+
+function adminDeleteUser(id) {
+  if (!state.user || state.user.role !== 'admin') return;
+  const users = getUsers();
+  const target = users.find(u => u.id === id);
+  if (!target || target.role === 'admin') return;
+  saveUsers(users.filter(u => u.id !== id));
+  toast(`Compte "${target.nom}" supprimé.`);
+  renderAdminSpace();
 }
 
 // ── Utilitaires ──

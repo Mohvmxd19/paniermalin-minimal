@@ -97,6 +97,7 @@ cp .env.example .env
 
 | Profil | Nom / Établissement | Numéro | Mot de passe |
 | :--- | :--- | :--- | :--- |
+| Administrateur | Admin PanierMalin | `07 00 00 00 00` | `admin1234` |
 | Client | Awa Koné | `07 00 00 00 03` | `demo1234` |
 | Commerçant | Le Fournil Cocody | `07 00 00 00 01` | `demo1234` |
 | Commerçant | Maquis Chez Tantie | `07 00 00 00 02` | `demo1234` |

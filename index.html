@@ -555,6 +555,58 @@
       </div>
     </section>
 
+    <!-- 9. ESPACE ADMINISTRATEUR -->
+    <section id="page-admin" class="page">
+      <div class="topbar">
+        <button class="back-link" onclick="showPage('home')">&larr; Retour à l'accueil</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="openCatalog()">Catalogue public</button>
+          <button class="btn btn-ghost btn-sm" onclick="logout()">Déconnexion</button>
+        </div>
+      </div>
+
+      <div class="page-head">
+        <h2 id="admin-title">Administration PanierMalin</h2>
+        <p id="admin-info">Supervision globale de la plateforme, suivi des commissions (15 %) et modération des comptes.</p>
+      </div>
+
+      <div class="metrics" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+        <div class="metric">
+          <div class="metric-val" id="adm-commission" style="color:var(--green);">0 F</div>
+          <div class="metric-lbl">Revenus PanierMalin (15%)</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="adm-gmv">0 F</div>
+          <div class="metric-lbl">Volume d'affaires (GMV)</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="adm-paniers">0</div>
+          <div class="metric-lbl">Paniers actifs</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="adm-merchants">0</div>
+          <div class="metric-lbl">Commerces partenaires</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="adm-users">0</div>
+          <div class="metric-lbl">Comptes inscrits</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="adm-co2">0 kg</div>
+          <div class="metric-lbl">CO2 total évité</div>
+        </div>
+      </div>
+
+      <div class="section-label">Modération de tous les paniers (Catalogue Abidjan)</div>
+      <div class="list" id="admin-paniers" style="margin-bottom:28px;"></div>
+
+      <div class="section-label">Supervision des transactions &amp; commissions (15 %)</div>
+      <div class="list" id="admin-orders" style="margin-bottom:28px;"></div>
+
+      <div class="section-label">Gestion des comptes utilisateurs (Clients &amp; Commerçants)</div>
+      <div class="list" id="admin-users"></div>
+    </section>
+
   </main>
 
   <div id="toast"></div>

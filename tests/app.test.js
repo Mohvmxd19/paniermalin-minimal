@@ -77,9 +77,10 @@ console.log('\n[TESTS] Démarrage de la suite PanierMalin...\n');
 
 const ctx = loadAppContext();
 
-test('Données initiales : 3 comptes pré-remplis au format CI +225 (10 chiffres)', () => {
+test('Données initiales : 4 comptes pré-remplis (Admin, Client, 2 Commerçants) au format CI +225', () => {
   const users = ctx.getUsers();
-  assert.strictEqual(users.length, 3);
+  assert.strictEqual(users.length, 4);
+  assert(users.some(u => u.role === 'admin' && u.telephone === '+2250700000000'));
   users.forEach(u => assert(/^\+225(01|05|07|21|25|27)\d{8}$/.test(u.telephone)));
 });
 
@@ -146,9 +147,9 @@ test('Persistance locale : ajout, modification et désactivation d\'un panier co
   assert.strictEqual(afterEdit.actif, 0);
 });
 
-test('Structure HTML : les 8 vues principales et le bloc pro masquable sont présents', () => {
+test('Structure HTML : les 9 vues principales (dont page-admin) et le bloc pro masquable sont présents', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  for (const id of ['page-home', 'page-auth', 'page-catalog', 'page-detail', 'page-confirm', 'page-client', 'page-merchant', 'page-publish', 'hero-pro-note', 'pub-image-file', 'pub-image-url', 'detail-img']) {
+  for (const id of ['page-home', 'page-auth', 'page-catalog', 'page-detail', 'page-confirm', 'page-client', 'page-merchant', 'page-publish', 'page-admin', 'hero-pro-note', 'pub-image-file', 'pub-image-url', 'detail-img']) {
     assert(html.includes(`id="${id}"`), `Section manquante dans index.html : ${id}`);
   }
 });
