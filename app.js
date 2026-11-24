@@ -107,19 +107,19 @@ const SEED_USERS = [
 ];
 
 const CATEGORY_IMAGES = {
-  'Boulangerie':  'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=700&q=80',
-  'Restauration': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=700&q=80',
-  'Boissons':     'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=700&q=80',
-  'Épicerie':     'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=700&q=80',
-  'Divers':       'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=700&q=80'
+  'Boulangerie':  './images/pain-baguettes.jpg',
+  'Restauration': './images/attieke-poisson.jpg',
+  'Boissons':     './images/jus-naturels.jpg',
+  'Épicerie':     './images/pain-baguettes.jpg',
+  'Divers':       './images/plat-du-soir.jpg'
 };
 
 const SEED_PANIERS = [
   { id: 1, commercant_id: 1, commercant_nom: 'Le Fournil Cocody', commercant_adresse: 'Boulevard Latrille, Cocody Saint-Jean', titre: 'Panier Viennoiseries', description: 'Croissants, pains au chocolat et brioches du jour.', categorie: 'Boulangerie', quartier: 'Cocody', prix_initial: 1200, remise: 60, prix_remise: 480, stock: 4, creneau_debut: '18:30', creneau_fin: '19:30', frais_livraison: 1000, lat: 5.3585, lng: -3.9820, actif: 1, image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=700&q=80' },
-  { id: 2, commercant_id: 1, commercant_nom: 'Le Fournil Cocody', commercant_adresse: 'Boulevard Latrille, Cocody Saint-Jean', titre: 'Plat du soir Capitaine', description: 'Riz sauce arachide avec filet de poisson capitaine braisé.', categorie: 'Restauration', quartier: 'Cocody', prix_initial: 1500, remise: 50, prix_remise: 750, stock: 3, creneau_debut: '20:00', creneau_fin: '21:00', frais_livraison: 1000, lat: 5.3585, lng: -3.9820, actif: 1, image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=700&q=80' },
-  { id: 3, commercant_id: 1, commercant_nom: 'Le Fournil Cocody', commercant_adresse: 'Boulevard Latrille, Cocody Saint-Jean', titre: 'Pain frais & baguettes', description: 'Baguettes tradition et pains de mie invendus du matin.', categorie: 'Boulangerie', quartier: 'Cocody', prix_initial: 600, remise: 60, prix_remise: 240, stock: 6, creneau_debut: '19:00', creneau_fin: '20:00', frais_livraison: 1000, lat: 5.3585, lng: -3.9820, actif: 1, image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=700&q=80' },
-  { id: 4, commercant_id: 2, commercant_nom: 'Maquis Chez Tantie', commercant_adresse: 'Zone 4 Rue du Canal, Marcory', titre: 'Attiéké Poisson Braisé', description: 'Portion généreuse d\'attiéké frais avec carpe braisée du jour.', categorie: 'Restauration', quartier: 'Marcory', prix_initial: 1800, remise: 50, prix_remise: 900, stock: 2, creneau_debut: '19:30', creneau_fin: '20:30', frais_livraison: 1200, lat: 5.3045, lng: -3.9860, actif: 1, image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=700&q=80' },
-  { id: 5, commercant_id: 2, commercant_nom: 'Maquis Chez Tantie', commercant_adresse: 'Zone 4 Rue du Canal, Marcory', titre: 'Jus Naturels Pressés', description: 'Bissap, gingembre et tamarin frais sans conservateur.', categorie: 'Boissons', quartier: 'Marcory', prix_initial: 800, remise: 70, prix_remise: 240, stock: 5, creneau_debut: '18:00', creneau_fin: '19:30', frais_livraison: 800, lat: 5.3045, lng: -3.9860, actif: 1, image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=700&q=80' }
+  { id: 2, commercant_id: 1, commercant_nom: 'Le Fournil Cocody', commercant_adresse: 'Boulevard Latrille, Cocody Saint-Jean', titre: 'Plat du soir Capitaine', description: 'Placali / accompagnement du soir avec poisson et crevettes braisés.', categorie: 'Restauration', quartier: 'Cocody', prix_initial: 1500, remise: 50, prix_remise: 750, stock: 3, creneau_debut: '20:00', creneau_fin: '21:00', frais_livraison: 1000, lat: 5.3585, lng: -3.9820, actif: 1, image: './images/plat-du-soir.jpg' },
+  { id: 3, commercant_id: 1, commercant_nom: 'Le Fournil Cocody', commercant_adresse: 'Boulevard Latrille, Cocody Saint-Jean', titre: 'Pain frais & baguettes', description: 'Baguettes tradition et pains de mie invendus du matin.', categorie: 'Boulangerie', quartier: 'Cocody', prix_initial: 600, remise: 60, prix_remise: 240, stock: 6, creneau_debut: '19:00', creneau_fin: '20:00', frais_livraison: 1000, lat: 5.3585, lng: -3.9820, actif: 1, image: './images/pain-baguettes.jpg' },
+  { id: 4, commercant_id: 2, commercant_nom: 'Maquis Chez Tantie', commercant_adresse: 'Zone 4 Rue du Canal, Marcory', titre: 'Attiéké Poisson Braisé', description: 'Portion généreuse d\'attiéké frais avec carpe braisée du jour.', categorie: 'Restauration', quartier: 'Marcory', prix_initial: 1800, remise: 50, prix_remise: 900, stock: 2, creneau_debut: '19:30', creneau_fin: '20:30', frais_livraison: 1200, lat: 5.3045, lng: -3.9860, actif: 1, image: './images/attieke-poisson.jpg' },
+  { id: 5, commercant_id: 2, commercant_nom: 'Maquis Chez Tantie', commercant_adresse: 'Zone 4 Rue du Canal, Marcory', titre: 'Jus Naturels Pressés', description: 'Bissap, gingembre et jus de passion frais sans conservateur.', categorie: 'Boissons', quartier: 'Marcory', prix_initial: 800, remise: 70, prix_remise: 240, stock: 5, creneau_debut: '18:00', creneau_fin: '19:30', frais_livraison: 800, lat: 5.3045, lng: -3.9860, actif: 1, image: './images/jus-naturels.jpg' }
 ];
 
 const SEED_ORDERS = [
@@ -175,13 +175,17 @@ function getUsers() {
 function saveUsers(v) { writeStore('pm_min_users', v); }
 function getPaniers() {
   const list = readStore('pm_min_paniers', SEED_PANIERS);
-  return list.map(p => {
-    if (!p.image) {
-      const seed = SEED_PANIERS.find(s => s.id === p.id);
+  let updated = false;
+  const result = list.map(p => {
+    const seed = SEED_PANIERS.find(s => s.id === p.id);
+    if (!p.image || (seed && seed.image.startsWith('./images/') && String(p.image).includes('images.unsplash.com'))) {
       p.image = (seed && seed.image) || CATEGORY_IMAGES[p.categorie] || CATEGORY_IMAGES.Divers;
+      updated = true;
     }
     return p;
   });
+  if (updated) writeStore('pm_min_paniers', result);
+  return result;
 }
 function savePaniers(v) { writeStore('pm_min_paniers', v); }
 function getOrders()   { return readStore('pm_min_orders', SEED_ORDERS); }

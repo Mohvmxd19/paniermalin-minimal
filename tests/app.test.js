@@ -156,12 +156,12 @@ test('Structure HTML : les 9 vues principales (dont page-admin) et le guichet de
 
 test('Images produits : image par défaut, URL personnalisée et fallback SVG fonctionnent', () => {
   const paniers = ctx.getPaniers();
-  assert(paniers[0].image && paniers[0].image.startsWith('http'));
+  assert(paniers[0].image && (paniers[0].image.startsWith('http') || paniers[0].image.startsWith('./images/')));
   assert.strictEqual(
     ctx.getPanierImage({ categorie: 'Boulangerie', image: 'https://exemple.com/mon-panier.jpg' }),
     'https://exemple.com/mon-panier.jpg'
   );
-  assert(ctx.getPanierImage({ categorie: 'Boulangerie', image: '' }).startsWith('http'));
+  assert(ctx.getPanierImage({ categorie: 'Boulangerie', image: '' }).startsWith('./images/'));
   const fb = ctx.getFallbackSvg('Boulangerie');
   assert(fb.startsWith('data:image/svg+xml'));
 });
