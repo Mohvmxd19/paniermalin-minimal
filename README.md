@@ -4,12 +4,8 @@ Application web anti-gaspillage alimentaire conçue pour les quartiers d'Abidjan
 
 Projet réalisé dans le cadre du module **Fondamentaux du Web** — MIAGE 2ème Année, Université Polytechnique de Bingerville (UPB).
 
-**Membres du groupe :**
+**Réalisé par :**
 - Kone Mohamed Lukmane
-- Akambi Bili
-- Bagayoko Abdoulaye
-- Elleli Océane
-- Kone Ira Maéva
 
 ---
 
